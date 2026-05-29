@@ -1,0 +1,2 @@
+// configuration jest
+module.exports = {};
