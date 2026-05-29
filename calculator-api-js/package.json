@@ -1,1 +1,15 @@
-{}
+{
+    "name": "calculator-api-js",
+    "version": "1.0.0",
+    "description": "API Calculatrice",
+    "main": "src/server.js",
+    "scripts": {
+        "start": "node src/server.js",
+        "test": "jest"
+    },
+    "engines": {
+        "node": ">=22.0.0"
+    },
+    "author": "",
+    "license": "ISC"
+}
