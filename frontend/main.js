@@ -29,6 +29,7 @@ let currentOperand = "";
 let previousOperand = "";
 let operation = undefined;
 let shouldResetScreen = false;
+let isComputing = false;
 let history = JSON.parse(localStorage.getItem("calc_history") || "[]");
 
 const buttons = document.querySelectorAll(".btn");
@@ -53,12 +54,15 @@ buttons.forEach((button) => {
     }
 
     // 3. Process action
+    if (isComputing) return;
     if (button.hasAttribute("data-num")) {
       appendNumber(button.getAttribute("data-num"));
     } else if (button.hasAttribute("data-op")) {
       chooseOperation(button.getAttribute("data-op"));
     } else if (button.id === "clear") {
       clear();
+    } else if (button.id === "delete") {
+      deleteNumber();
     } else if (button.id === "equals") {
       compute();
     }
@@ -118,6 +122,22 @@ function clear() {
   setStatus("Prêt", "ready");
 }
 
+function deleteNumber() {
+  if (shouldResetScreen) {
+    currentOperand = "";
+    shouldResetScreen = false;
+    updateDisplay();
+    return;
+  }
+  if (currentOperand === "Erreur") {
+    currentOperand = "";
+    updateDisplay();
+    return;
+  }
+  currentOperand = currentOperand.toString().slice(0, -1);
+  updateDisplay();
+}
+
 function appendNumber(number) {
   if (shouldResetScreen) {
     currentOperand = "";
@@ -128,10 +148,16 @@ function appendNumber(number) {
   updateDisplay();
 }
 
-function chooseOperation(op) {
-  if (currentOperand === "") return;
-  if (previousOperand !== "") {
+async function chooseOperation(op) {
+  if (currentOperand === "") {
+    if (previousOperand !== "") {
+      operation = op;
+      updateDisplay();
+    }
     return;
+  }
+  if (previousOperand !== "") {
+    await compute();
   }
   operation = op;
   previousOperand = currentOperand;
@@ -141,6 +167,7 @@ function chooseOperation(op) {
 }
 
 async function compute() {
+  if (isComputing) return;
   let computation;
   const prev = parseFloat(previousOperand);
   const current = parseFloat(currentOperand);
@@ -159,6 +186,7 @@ async function compute() {
   }
   const currentText = getDisplayNumber(currentOperand);
 
+  isComputing = true;
   try {
     const response = await fetch(
       `/api/calculate?operation=${operation}&a=${prev}&b=${current}`,
@@ -190,6 +218,8 @@ async function compute() {
     previousOperand = "";
     operation = undefined;
     shouldResetScreen = true;
+  } finally {
+    isComputing = false;
   }
 
   updateDisplay();
@@ -218,7 +248,7 @@ function updateDisplay() {
   if (currentOperand === "Erreur") {
     currentOperandTextElement.innerText = currentOperand;
   } else {
-    currentOperandTextElement.innerText = getDisplayNumber(currentOperand);
+    currentOperandTextElement.innerText = getDisplayNumber(currentOperand) || "0";
   }
 
   if (operation != null) {

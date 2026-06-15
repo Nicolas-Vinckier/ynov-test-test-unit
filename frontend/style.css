@@ -13,6 +13,11 @@
   --danger: #ef4444;
   --danger-rgb: 239, 68, 68;
   --success: #10b981;
+  --history-bg: #0f172a;
+  --history-item-bg: rgba(255, 255, 255, 0.02);
+  --history-item-border: rgba(255, 255, 255, 0.04);
+  --scrollbar-track: rgba(255, 255, 255, 0.02);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
 }
 
 * {
@@ -48,6 +53,11 @@ body.light-theme {
   --text-muted: #475569;
   --danger: #dc2626;
   --success: #059669;
+  --history-bg: #f8fafc;
+  --history-item-bg: rgba(15, 23, 42, 0.03);
+  --history-item-border: rgba(15, 23, 42, 0.08);
+  --scrollbar-track: rgba(15, 23, 42, 0.02);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.15);
 }
 
 /* Background Blobs */
@@ -326,7 +336,6 @@ body.is-test .blob {
 
 .btn.clear {
   color: var(--danger);
-  grid-column: span 2;
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.15);
   font-weight: 500;
@@ -336,6 +345,19 @@ body.is-test .blob {
   background: rgba(239, 68, 68, 0.16);
   border-color: rgba(239, 68, 68, 0.3);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+.btn.delete {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.15);
+  font-weight: 500;
+}
+
+.btn.delete:hover {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
 }
 
 .span-two {
@@ -425,7 +447,7 @@ body.is-test .blob {
   left: 0;
   right: 0;
   height: 80%;
-  background: #0f172a;
+  background: var(--history-bg);
   border-bottom: 1px solid var(--glass-border);
   border-radius: 28px 28px 0 0;
   padding: 24px;
@@ -487,16 +509,16 @@ body.is-test .blob {
   width: 4px;
 }
 .history-list::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--scrollbar-track);
 }
 .history-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--scrollbar-thumb);
   border-radius: 2px;
 }
 
 .history-item {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--history-item-bg);
+  border: 1px solid var(--history-item-border);
   padding: 12px;
   border-radius: 12px;
   display: flex;
