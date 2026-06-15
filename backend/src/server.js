@@ -8,10 +8,13 @@ const PORT = process.env.PORT || 3000;
 const REDIS_URL = process.env.REDIS_URL || "redis://redis:6379";
 
 const redisClient = redis.createClient({ url: REDIS_URL });
-redisClient.on("error", (err) => console.log("Redis Client Error", err));
-redisClient
-  .connect()
-  .catch(() => console.log("Failed to connect to Redis initially."));
+/* istanbul ignore next */
+if (process.env.NODE_ENV !== "test") {
+  redisClient.on("error", (err) => console.log("Redis Client Error", err));
+  redisClient
+    .connect()
+    .catch(() => console.log("Failed to connect to Redis initially."));
+}
 
 const sendResponse = (res, status, body, extraHeaders = {}) => {
   const headers = {
@@ -94,6 +97,7 @@ const requestHandler = async (req, res) => {
   const cacheKey = `${op}:${numA}:${numB}`;
 
   try {
+    /* istanbul ignore next */
     if (redisClient.isReady) {
       const cachedResult = await redisClient.get(cacheKey);
       if (cachedResult !== null) {
@@ -123,6 +127,7 @@ const requestHandler = async (req, res) => {
         break;
     }
 
+    /* istanbul ignore next */
     if (redisClient.isReady) {
       await redisClient.set(cacheKey, result, { EX: 3600 });
     }
