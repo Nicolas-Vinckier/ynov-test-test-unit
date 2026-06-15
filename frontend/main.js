@@ -2,10 +2,11 @@ import "./style.css";
 
 const currentOperandTextElement = document.getElementById("current-operand");
 const previousOperandTextElement = document.getElementById("previous-operand");
-const statusDot = document.querySelector(".dot");
-const statusText = document.querySelector(".status-bar").lastChild;
+const statusBar = document.getElementById("status-bar");
+const statusDot = statusBar.querySelector(".dot");
+const statusText = statusBar.lastChild;
+const keypad = document.querySelector(".keypad");
 
-// New elements for enhanced UI features
 const historyDrawer = document.getElementById("history-drawer");
 const historyToggle = document.getElementById("history-toggle");
 const historyClose = document.getElementById("history-close");
@@ -13,69 +14,84 @@ const historyList = document.getElementById("history-list");
 const clearHistoryBtn = document.getElementById("clear-history");
 const themeToggle = document.getElementById("theme-toggle");
 
-// Load and apply saved theme preference
-const savedTheme = localStorage.getItem("theme") || "dark";
-if (savedTheme === "light") {
-  document.body.classList.add("light-theme");
-}
-
-themeToggle.addEventListener("click", () => {
-  document.body.classList.toggle("light-theme");
-  const currentTheme = document.body.classList.contains("light-theme")
-    ? "light"
-    : "dark";
-  localStorage.setItem("theme", currentTheme);
+const THEME_STORAGE_KEY = "theme";
+const HISTORY_STORAGE_KEY = "calc_history";
+const MAX_HISTORY_ITEMS = 20;
+const OPERATION_SYMBOLS = Object.freeze({
+  add: "+",
+  subtract: "-",
+  multiply: "x",
+  divide: "÷",
 });
-
-let currentOperand = "";
-let previousOperand = "";
-let operation = undefined;
-let shouldResetScreen = false;
-let isComputing = false;
-let history = JSON.parse(localStorage.getItem("calc_history") || "[]");
-
-const buttons = document.querySelectorAll(".btn");
 
 const isTest = navigator.webdriver;
 if (isTest) {
   document.body.classList.add("is-test");
 }
 
-// Initialize History UI
+const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "dark";
+if (savedTheme === "light") {
+  document.body.classList.add("light-theme");
+}
+
+let currentOperand = "";
+let previousOperand = "";
+let operation = undefined;
+let shouldResetScreen = false;
+let isComputing = false;
+let history = loadHistory();
+
 renderHistory();
 
-// Event listeners for basic functionality & visual feedback
-buttons.forEach((button) => {
-  button.addEventListener("click", (e) => {
-    if (!isTest) {
-      // 1. Dynamic Ripple Effect
-      createRipple(e, button);
+keypad.addEventListener("click", async (event) => {
+  const button = event.target.closest(".btn");
+  if (!button || !keypad.contains(button) || isComputing) return;
 
-      // 2. Trigger active pop effect on display
-      triggerDisplayPop();
-    }
+  if (!isTest) {
+    createRipple(event, button);
+    triggerDisplayPop();
+  }
 
-    // 3. Process action
-    if (isComputing) return;
-    if (button.hasAttribute("data-num")) {
-      appendNumber(button.getAttribute("data-num"));
-    } else if (button.hasAttribute("data-op")) {
-      chooseOperation(button.getAttribute("data-op"));
-    } else if (button.id === "clear") {
-      clear();
-    } else if (button.id === "delete") {
-      deleteNumber();
-    } else if (button.id === "equals") {
-      if (currentOperand === "0000" && !previousOperand) {
-        triggerEasterEgg();
-      } else {
-        compute();
-      }
+  const number = button.dataset.num;
+  const op = button.dataset.op;
+
+  if (number !== undefined) {
+    appendNumber(number);
+    return;
+  }
+
+  if (op !== undefined) {
+    await chooseOperation(op);
+    return;
+  }
+
+  if (button.id === "clear") {
+    clear();
+    return;
+  }
+
+  if (button.id === "delete") {
+    deleteNumber();
+    return;
+  }
+
+  if (button.id === "equals") {
+    if (currentOperand === "0000" && !previousOperand) {
+      triggerEasterEgg();
+      return;
     }
-  });
+    await compute();
+  }
 });
 
-// History drawer toggle events
+themeToggle.addEventListener("click", () => {
+  document.body.classList.toggle("light-theme");
+  const currentTheme = document.body.classList.contains("light-theme")
+    ? "light"
+    : "dark";
+  localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
+});
+
 historyToggle.addEventListener("click", () => {
   historyDrawer.classList.add("open");
 });
@@ -86,16 +102,14 @@ historyClose.addEventListener("click", () => {
 
 clearHistoryBtn.addEventListener("click", () => {
   history = [];
-  localStorage.setItem("calc_history", JSON.stringify(history));
+  saveHistory();
   renderHistory();
 });
 
-// Click Ripple helper
 function createRipple(event, button) {
   const circle = document.createElement("span");
   const diameter = Math.max(button.clientWidth, button.clientHeight);
   const radius = diameter / 2;
-
   const rect = button.getBoundingClientRect();
 
   circle.style.width = circle.style.height = `${diameter}px`;
@@ -103,20 +117,15 @@ function createRipple(event, button) {
   circle.style.top = `${event.clientY - rect.top - radius}px`;
   circle.classList.add("ripple");
 
-  const ripple = button.getElementsByClassName("ripple")[0];
-
-  if (ripple) {
-    ripple.remove();
-  }
-
+  button.querySelector(".ripple")?.remove();
   button.appendChild(circle);
 }
 
-// Display Pop animation helper
 function triggerDisplayPop() {
   currentOperandTextElement.classList.remove("pop-effect");
-  void currentOperandTextElement.offsetWidth; // Trigger reflow to restart animation
-  currentOperandTextElement.classList.add("pop-effect");
+  requestAnimationFrame(() => {
+    currentOperandTextElement.classList.add("pop-effect");
+  });
 }
 
 function clear() {
@@ -147,11 +156,13 @@ function deleteNumber() {
     updateDisplay();
     return;
   }
+
   if (currentOperand === "Erreur") {
     currentOperand = "";
     updateDisplay();
     return;
   }
+
   currentOperand = currentOperand.toString().slice(0, -1);
   updateDisplay();
 }
@@ -161,7 +172,9 @@ function appendNumber(number) {
     currentOperand = "";
     shouldResetScreen = false;
   }
+
   if (number === "." && currentOperand.includes(".")) return;
+
   currentOperand = currentOperand.toString() + number.toString();
   updateDisplay();
 }
@@ -174,9 +187,11 @@ async function chooseOperation(op) {
     }
     return;
   }
+
   if (previousOperand !== "") {
     await compute();
   }
+
   operation = op;
   previousOperand = currentOperand;
   currentOperand = "";
@@ -185,38 +200,27 @@ async function chooseOperation(op) {
 }
 
 async function compute() {
-  if (isComputing) return;
-  let computation;
-  const prev = parseFloat(previousOperand);
-  const current = parseFloat(currentOperand);
-  if (isNaN(prev) || isNaN(current)) return;
-  if (!operation) return;
+  if (isComputing || !operation) return;
+
+  const prev = Number.parseFloat(previousOperand);
+  const current = Number.parseFloat(currentOperand);
+  if (Number.isNaN(prev) || Number.isNaN(current)) return;
 
   setStatus("Calcul en cours...", "ready");
 
   const prevText = getDisplayNumber(previousOperand);
-  let opSymbol = "";
-  switch (operation) {
-    case "add":
-      opSymbol = "+";
-      break;
-    case "subtract":
-      opSymbol = "-";
-      break;
-    case "multiply":
-      opSymbol = "x";
-      break;
-    case "divide":
-      opSymbol = "÷";
-      break;
-  }
   const currentText = getDisplayNumber(currentOperand);
+  const opSymbol = OPERATION_SYMBOLS[operation] || operation;
 
   isComputing = true;
   try {
-    const response = await fetch(
-      `/api/calculate?operation=${operation}&a=${prev}&b=${current}`,
-    );
+    const params = new URLSearchParams({
+      operation,
+      a: String(prev),
+      b: String(current),
+    });
+
+    const response = await fetch(`/api/calculate?${params.toString()}`);
     const data = await response.json();
 
     if (!response.ok) {
@@ -224,19 +228,12 @@ async function compute() {
     }
 
     currentOperand = data.result.toString();
-
-    // Save to history
     addToHistory(`${prevText} ${opSymbol} ${currentText}`, currentOperand);
 
     operation = undefined;
     previousOperand = "";
     shouldResetScreen = true;
-
-    if (data.cached) {
-      setStatus("Résultat en cache", "cached");
-    } else {
-      setStatus("Calculé avec succès", "ready");
-    }
+    setStatus(data.cached ? "Résultat en cache" : "Calculé avec succès", data.cached ? "cached" : "ready");
   } catch (error) {
     console.error(error);
     setStatus("Erreur: " + error.message, "error");
@@ -253,56 +250,36 @@ async function compute() {
 
 function getDisplayNumber(number) {
   const stringNumber = number.toString();
-  const integerDigits = parseFloat(stringNumber.split(".")[0]);
-  const decimalDigits = stringNumber.split(".")[1];
-  let integerDisplay;
-  if (isNaN(integerDigits)) {
-    integerDisplay = "";
-  } else {
-    integerDisplay = integerDigits.toLocaleString("fr-FR", {
-      maximumFractionDigits: 0,
-    });
-  }
+  const [integerPart, decimalDigits] = stringNumber.split(".");
+  const integerDigits = Number.parseFloat(integerPart);
+  const integerDisplay = Number.isNaN(integerDigits)
+    ? ""
+    : integerDigits.toLocaleString("fr-FR", { maximumFractionDigits: 0 });
+
   if (decimalDigits != null) {
     return `${integerDisplay}.${decimalDigits}`;
-  } else {
-    return integerDisplay;
   }
+
+  return integerDisplay;
 }
 
 function updateDisplay() {
-  if (currentOperand === "Erreur") {
-    currentOperandTextElement.innerText = currentOperand;
-  } else {
-    currentOperandTextElement.innerText =
-      getDisplayNumber(currentOperand) || "0";
-  }
+  currentOperandTextElement.innerText =
+    currentOperand === "Erreur" ? currentOperand : getDisplayNumber(currentOperand) || "0";
 
   if (operation != null) {
-    let opSymbol = operation;
-    switch (operation) {
-      case "add":
-        opSymbol = "+";
-        break;
-      case "subtract":
-        opSymbol = "-";
-        break;
-      case "multiply":
-        opSymbol = "x";
-        break;
-      case "divide":
-        opSymbol = "÷";
-        break;
-    }
+    const opSymbol = OPERATION_SYMBOLS[operation] || operation;
     previousOperandTextElement.innerText = `${getDisplayNumber(previousOperand)} ${opSymbol}`;
-  } else {
-    previousOperandTextElement.innerText = "";
+    return;
   }
+
+  previousOperandTextElement.innerText = "";
 }
 
 function setStatus(text, type) {
   statusText.textContent = " " + text;
   statusDot.className = "dot";
+
   if (type === "cached") {
     statusDot.classList.add("cached");
   } else if (type === "error") {
@@ -310,32 +287,54 @@ function setStatus(text, type) {
   }
 }
 
-// History Functions
+function loadHistory() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed.slice(0, MAX_HISTORY_ITEMS) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory() {
+  localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+}
+
 function addToHistory(calculation, result) {
   history.unshift({ calculation, result });
-  // Keep last 20 entries
-  if (history.length > 20) {
-    history.pop();
-  }
-  localStorage.setItem("calc_history", JSON.stringify(history));
+  history = history.slice(0, MAX_HISTORY_ITEMS);
+  saveHistory();
   renderHistory();
 }
 
 function renderHistory() {
+  historyList.replaceChildren();
+
   if (history.length === 0) {
-    historyList.innerHTML =
-      '<div class="empty-history">Aucun calcul récent</div>';
+    const emptyState = document.createElement("div");
+    emptyState.className = "empty-history";
+    emptyState.textContent = "Aucun calcul récent";
+    historyList.appendChild(emptyState);
     return;
   }
 
-  historyList.innerHTML = history
-    .map(
-      (item) => `
-      <div class="history-item">
-        <div class="history-item-calc">${item.calculation} =</div>
-        <div class="history-item-result">${getDisplayNumber(item.result)}</div>
-      </div>
-    `,
-    )
-    .join("");
+  const fragment = document.createDocumentFragment();
+
+  for (const item of history) {
+    const historyItem = document.createElement("div");
+    const calculation = document.createElement("div");
+    const result = document.createElement("div");
+
+    historyItem.className = "history-item";
+    calculation.className = "history-item-calc";
+    result.className = "history-item-result";
+
+    calculation.textContent = `${item.calculation} =`;
+    result.textContent = getDisplayNumber(item.result);
+
+    historyItem.append(calculation, result);
+    fragment.appendChild(historyItem);
+  }
+
+  historyList.appendChild(fragment);
 }
