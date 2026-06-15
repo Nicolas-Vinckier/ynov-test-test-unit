@@ -6,41 +6,99 @@
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cand'culatrice</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 
 <body>
+  <!-- Animated background blobs for deep glassmorphism visual layout -->
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
   <div id="app">
     <div class="calculator glass">
+      <!-- Calculator Header -->
+      <div class="calculator-header">
+        <span class="logo-text">CAND'CULATRICE</span>
+        <div class="header-actions">
+          <button class="icon-btn" id="theme-toggle" aria-label="Changer de thème">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="theme-icon sun-icon">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="theme-icon moon-icon">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <button class="icon-btn" id="history-toggle" aria-label="Historique">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="history-icon">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Display -->
       <div class="display">
         <div class="previous-operand" id="previous-operand"></div>
         <div class="current-operand" id="current-operand">0</div>
       </div>
+
+      <!-- Keypad -->
       <div class="keypad">
         <button class="btn clear" id="clear">AC</button>
         <button class="btn operator" data-op="divide">÷</button>
         <button class="btn operator" data-op="multiply">x</button>
+        
         <button class="btn" data-num="7">7</button>
         <button class="btn" data-num="8">8</button>
         <button class="btn" data-num="9">9</button>
         <button class="btn operator" data-op="subtract">-</button>
+        
         <button class="btn" data-num="4">4</button>
         <button class="btn" data-num="5">5</button>
         <button class="btn" data-num="6">6</button>
         <button class="btn operator" data-op="add">+</button>
+        
         <button class="btn" data-num="1">1</button>
         <button class="btn" data-num="2">2</button>
         <button class="btn" data-num="3">3</button>
+        
         <button class="btn equals" id="equals">=</button>
         <button class="btn span-two" data-num="0">0</button>
         <button class="btn" data-num=".">.</button>
       </div>
+
+      <!-- Status Bar -->
       <div class="status-bar" id="status-bar">
-        <span class="dot"></span> Prêt
+        <span class="dot"></span> <span>Prêt</span>
+      </div>
+
+      <!-- History Drawer (Slides in from the top/inside the calculator) -->
+      <div class="history-drawer" id="history-drawer">
+        <div class="drawer-header">
+          <h3>Historique</h3>
+          <button class="close-drawer" id="history-close" aria-label="Fermer">&times;</button>
+        </div>
+        <div class="history-list" id="history-list">
+          <div class="empty-history">Aucun calcul récent</div>
+        </div>
+        <button class="clear-history-btn" id="clear-history">Effacer tout</button>
       </div>
     </div>
   </div>
+
   <script type="module" src="/main.js"></script>
 </body>
 
