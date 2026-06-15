@@ -1,9 +1,17 @@
 const http = require("http");
 const url = require("url");
+const redis = require("redis");
 const Calculator = require("./calculator");
 
 const calculator = new Calculator();
 const PORT = process.env.PORT || 3000;
+const REDIS_URL = process.env.REDIS_URL || "redis://redis:6379";
+
+const redisClient = redis.createClient({ url: REDIS_URL });
+redisClient.on("error", (err) => console.log("Redis Client Error", err));
+redisClient
+  .connect()
+  .catch(() => console.log("Failed to connect to Redis initially."));
 
 const sendResponse = (res, status, body, extraHeaders = {}) => {
   const headers = {
@@ -21,7 +29,7 @@ const sendResponse = (res, status, body, extraHeaders = {}) => {
   }
 };
 
-const requestHandler = (req, res) => {
+const requestHandler = async (req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
   const query = parsedUrl.query;
@@ -83,7 +91,22 @@ const requestHandler = (req, res) => {
     });
   }
 
+  const cacheKey = `${op}:${numA}:${numB}`;
+
   try {
+    if (redisClient.isReady) {
+      const cachedResult = await redisClient.get(cacheKey);
+      if (cachedResult !== null) {
+        return sendResponse(res, 200, {
+          operation: op,
+          a: numA,
+          b: numB,
+          result: Number(cachedResult),
+          cached: true,
+        });
+      }
+    }
+
     let result;
     switch (op) {
       case "add":
@@ -99,11 +122,17 @@ const requestHandler = (req, res) => {
         result = calculator.divide(numA, numB);
         break;
     }
+
+    if (redisClient.isReady) {
+      await redisClient.set(cacheKey, result, { EX: 3600 });
+    }
+
     return sendResponse(res, 200, {
       operation: op,
       a: numA,
       b: numB,
       result: result,
+      cached: false,
     });
   } catch (error) {
     return sendResponse(res, 400, { error: error.message });
