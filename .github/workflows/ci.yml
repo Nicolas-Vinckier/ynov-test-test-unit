@@ -1,50 +1,77 @@
-name: CI - Tests & Couverture
+name: CI - Tests & Build
 
 on:
   push:
     branches: ["**"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "master"]
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-defaults:
-  run:
-    working-directory: calculator-api-js
-
 jobs:
-  lint:
-    name: Lint (ESLint)
+  backend:
+    name: Backend Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
-          node-version: "22.x"
-      - run: npm install
-      - run: npm run lint
+          node-version: "22"
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: backend
+      - name: Lint
+        run: npm run lint
+        working-directory: backend
+      - name: Run tests
+        run: npm run test:ci
+        working-directory: backend
 
-  test:
-    name: Tests Node.js ${{ matrix.node-version }}
+  frontend:
+    name: Frontend Build
     runs-on: ubuntu-latest
-    needs: lint
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: ["22.x", "24.x"]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-      - run: npm install
-      - run: npm run test:ci
+          node-version: "22"
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+      - name: Build
+        run: npm run build
+        working-directory: frontend
 
-      - name: Upload du rapport de couverture
-        if: matrix.node-version == '22.x'
+  e2e:
+    name: Playwright E2E Tests
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+      - name: Install Root Dependencies
+        run: npm ci
+      - name: Install Frontend Dependencies
+        run: npm ci --prefix frontend
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - name: Run Playwright tests
+        run: npx playwright test
+      - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: coverage-report
-          path: calculator-api-js/coverage/
+          name: playwright-report
+          path: playwright-report/
           retention-days: 30
