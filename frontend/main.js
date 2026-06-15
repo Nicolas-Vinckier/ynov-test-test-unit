@@ -21,7 +21,9 @@ if (savedTheme === "light") {
 
 themeToggle.addEventListener("click", () => {
   document.body.classList.toggle("light-theme");
-  const currentTheme = document.body.classList.contains("light-theme") ? "light" : "dark";
+  const currentTheme = document.body.classList.contains("light-theme")
+    ? "light"
+    : "dark";
   localStorage.setItem("theme", currentTheme);
 });
 
@@ -64,7 +66,11 @@ buttons.forEach((button) => {
     } else if (button.id === "delete") {
       deleteNumber();
     } else if (button.id === "equals") {
-      compute();
+      if (currentOperand === "0000" && !previousOperand) {
+        triggerEasterEgg();
+      } else {
+        compute();
+      }
     }
   });
 });
@@ -120,6 +126,18 @@ function clear() {
   shouldResetScreen = false;
   updateDisplay();
   setStatus("Prêt", "ready");
+}
+
+function triggerEasterEgg() {
+  document.body.classList.add("party-mode");
+  setStatus("PARTY MODE!", "cached");
+
+  setTimeout(() => {
+    document.body.classList.remove("party-mode");
+    setStatus("Prêt", "ready");
+    currentOperand = "";
+    updateDisplay();
+  }, 4000);
 }
 
 function deleteNumber() {
@@ -179,10 +197,18 @@ async function compute() {
   const prevText = getDisplayNumber(previousOperand);
   let opSymbol = "";
   switch (operation) {
-    case "add": opSymbol = "+"; break;
-    case "subtract": opSymbol = "-"; break;
-    case "multiply": opSymbol = "x"; break;
-    case "divide": opSymbol = "÷"; break;
+    case "add":
+      opSymbol = "+";
+      break;
+    case "subtract":
+      opSymbol = "-";
+      break;
+    case "multiply":
+      opSymbol = "x";
+      break;
+    case "divide":
+      opSymbol = "÷";
+      break;
   }
   const currentText = getDisplayNumber(currentOperand);
 
@@ -198,7 +224,7 @@ async function compute() {
     }
 
     currentOperand = data.result.toString();
-    
+
     // Save to history
     addToHistory(`${prevText} ${opSymbol} ${currentText}`, currentOperand);
 
@@ -248,7 +274,8 @@ function updateDisplay() {
   if (currentOperand === "Erreur") {
     currentOperandTextElement.innerText = currentOperand;
   } else {
-    currentOperandTextElement.innerText = getDisplayNumber(currentOperand) || "0";
+    currentOperandTextElement.innerText =
+      getDisplayNumber(currentOperand) || "0";
   }
 
   if (operation != null) {
@@ -296,7 +323,8 @@ function addToHistory(calculation, result) {
 
 function renderHistory() {
   if (history.length === 0) {
-    historyList.innerHTML = '<div class="empty-history">Aucun calcul récent</div>';
+    historyList.innerHTML =
+      '<div class="empty-history">Aucun calcul récent</div>';
     return;
   }
 
@@ -307,7 +335,7 @@ function renderHistory() {
         <div class="history-item-calc">${item.calculation} =</div>
         <div class="history-item-result">${getDisplayNumber(item.result)}</div>
       </div>
-    `
+    `,
     )
     .join("");
 }

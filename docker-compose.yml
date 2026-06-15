@@ -9,14 +9,14 @@ services:
     depends_on:
       - frontend
       - backend
-    mem_limit: 128m
+    mem_limit: 32m
 
   frontend:
     build:
       context: ./frontend
     expose:
       - "80"
-    mem_limit: 128m
+    mem_limit: 32m
 
   backend:
     build:
@@ -27,10 +27,10 @@ services:
       - REDIS_URL=redis://redis:6379
     depends_on:
       - redis
-    mem_limit: 128m
+    mem_limit: 32m
 
   redis:
     image: redis:alpine
     expose:
       - "6379"
-    mem_limit: 128m
+    mem_limit: 32m
