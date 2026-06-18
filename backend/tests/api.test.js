@@ -172,6 +172,36 @@ describe("API /calculate", () => {
     });
   });
 
+  describe("GET /calculate - cas nominaux - table", () => {
+    it.each`
+      op            | valeurA | valeurB | resultatAttendu
+      ${"multiply"} | ${9}    | ${5}    | ${45}
+      ${"add"}      | ${12}   | ${8}    | ${20}
+      ${"divide"}   | ${81}   | ${9}    | ${9}
+      ${"subtract"} | ${50}   | ${17}   | ${33}
+      ${"add"}      | ${-12}  | ${7}    | ${-5}
+      ${"multiply"} | ${-8}   | ${6}    | ${-48}
+      ${"subtract"} | ${3}    | ${10}   | ${-7}
+      ${"divide"}   | ${45}   | ${-5}   | ${-9}
+    `(
+      "retourne status 200 et le bon résultat pour $op($valeurA, $valeurB) = $resultatAttendu",
+      async ({ op, valeurA, valeurB, resultatAttendu }) => {
+        const { status, body } = await request(
+          server,
+          `/calculate?operation=${op}&a=${valeurA}&b=${valeurB}`,
+        );
+
+        expect(status).toBe(200);
+        expect(body).toMatchObject({
+          operation: op,
+          a: valeurA,
+          b: valeurB,
+          result: resultatAttendu,
+        });
+      },
+    );
+  });
+
   // =========================================================================
   // 3. TESTS D'OPÉRATIONS SPÉCIALES, ERREURS & CAS LIMITES
   // =========================================================================
