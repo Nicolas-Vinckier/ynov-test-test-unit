@@ -14,6 +14,10 @@ describe("API /calculate", () => {
     server.close(done);
   });
 
+  // =========================================================================
+  // 1. TESTS TECHNIQUES & INFRASTRUCTURE (Performance, HTTP, Sécurité, Routage)
+  // =========================================================================
+
   describe("Performance", () => {
     it("Une requête valide répond en moins de 100 ms", async () => {
       const { duration } = await request(
@@ -72,6 +76,48 @@ describe("API /calculate", () => {
     });
   });
 
+  describe("Méthode non autorisée", () => {
+    it("POST /calculate retourne 405 et un body avec error", async () => {
+      const { status, body } = await request(server, "/calculate", "POST");
+      expect(status).toBe(405);
+      expect(body).toHaveProperty("error");
+    });
+
+    it("POST /calculate retourne header allow contenant GET", async () => {
+      const { headers } = await request(server, "/calculate", "POST");
+      expect(headers["allow"]).toContain("GET");
+    });
+
+    it("PUT /calculate retourne 405", async () => {
+      const { status } = await request(server, "/calculate", "PUT");
+      expect(status).toBe(405);
+    });
+  });
+
+  describe("GET - autres routes", () => {
+    it("Route inconnue", async () => {
+      const { status, body } = await request(server, "/unknown");
+      expect(status).toBe(404);
+      expect(body.error).toBe("Route introuvable.");
+    });
+
+    it("Racine", async () => {
+      const { status, body } = await request(server, "/");
+      expect(status).toBe(404);
+      expect(body).toHaveProperty("error");
+    });
+
+    it("Slash final", async () => {
+      const { status, body } = await request(server, "/calculate/");
+      expect(status).toBe(404);
+      expect(body).toHaveProperty("error");
+    });
+  });
+
+  // =========================================================================
+  // 2. TESTS FACTUELS / NOMINAUX (Opérations arithmétiques standards)
+  // =========================================================================
+
   describe("GET /calculate - cas nominaux", () => {
     it.each([
       { operation: "add", a: 2, b: 3, expected: 5 },
@@ -126,23 +172,9 @@ describe("API /calculate", () => {
     });
   });
 
-  describe("Méthode non autorisée", () => {
-    it("POST /calculate retourne 405 et un body avec error", async () => {
-      const { status, body } = await request(server, "/calculate", "POST");
-      expect(status).toBe(405);
-      expect(body).toHaveProperty("error");
-    });
-
-    it("POST /calculate retourne header allow contenant GET", async () => {
-      const { headers } = await request(server, "/calculate", "POST");
-      expect(headers["allow"]).toContain("GET");
-    });
-
-    it("PUT /calculate retourne 405", async () => {
-      const { status } = await request(server, "/calculate", "PUT");
-      expect(status).toBe(405);
-    });
-  });
+  // =========================================================================
+  // 3. TESTS D'OPÉRATIONS SPÉCIALES, ERREURS & CAS LIMITES
+  // =========================================================================
 
   describe("GET /calculate - erreurs 400", () => {
     const errorParamMissing = /Paramètres attendus/;
@@ -198,26 +230,6 @@ describe("API /calculate", () => {
       const { body } = await request(server, "/calculate?operation=add&a=2");
       expect(body).toHaveProperty("error");
       expect(body).not.toHaveProperty("result");
-    });
-  });
-
-  describe("GET - autres routes", () => {
-    it("Route inconnue", async () => {
-      const { status, body } = await request(server, "/unknown");
-      expect(status).toBe(404);
-      expect(body.error).toBe("Route introuvable.");
-    });
-
-    it("Racine", async () => {
-      const { status, body } = await request(server, "/");
-      expect(status).toBe(404);
-      expect(body).toHaveProperty("error");
-    });
-
-    it("Slash final", async () => {
-      const { status, body } = await request(server, "/calculate/");
-      expect(status).toBe(404);
-      expect(body).toHaveProperty("error");
     });
   });
 
