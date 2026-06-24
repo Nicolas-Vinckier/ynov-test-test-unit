@@ -18,7 +18,7 @@ services:
 
   backend:
     build:
-      context: ./backend-js
+      context: ./backend-python
       target: runtime
     expose:
       - "3000"

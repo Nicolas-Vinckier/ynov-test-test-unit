@@ -1,56 +1,124 @@
-# Ynov Test Unit - Calculatrice
+# Ynov Test Unit - Calculatrice multi-backend
 
-Ce projet sépare l'exécution applicative et l'exécution des tests avec deux fichiers Docker Compose.
+Le projet contient maintenant deux implémentations du même backend :
 
-## 1. Lancer l'application
+- `backend-js` : backend historique en Node.js ;
+- `backend-python` : backend équivalent en Python Flask.
+
+Les deux backends exposent le même contrat HTTP :
+
+```http
+GET /calculate?operation=add&a=1&b=2
+```
+
+Le frontend et le gateway restent identiques. Le gateway Nginx redirige toujours `/api/*` vers un service Docker nommé `backend`. Chaque Compose applicatif choisit simplement quelle implémentation porte ce nom interne.
+
+## 1. Lancer l'application avec le backend JavaScript
+
+```bash
+docker compose -f docker-compose.js.yml up --build
+```
+
+Fichier utilisé : `docker-compose.js.yml`.
+
+Services démarrés :
+
+- `gateway` : point d'entrée HTTP sur le port `80` ;
+- `frontend` : interface de la calculatrice ;
+- `backend` : API Node.js construite depuis `backend-js` ;
+- `redis` : cache Redis partagé par l'application.
+
+Par compatibilité, `docker-compose.yml` contient la même configuration que `docker-compose.js.yml`. La commande suivante lance donc aussi la version JavaScript :
 
 ```bash
 docker compose up --build
 ```
 
-Cette commande utilise `docker-compose.yml` et démarre l'environnement applicatif :
-
-- `gateway` : point d'entrée HTTP sur le port 80 ;
-- `frontend` : interface de la calculatrice ;
-- `backend` : API Flask exposée en interne sur le port 3000 ;
-- `redis` : cache utilisé par le backend.
-
-L'objectif est de vérifier que l'application fonctionne comme un vrai service.
-
-## 2. Lancer les tests backend dans Docker
+## 2. Lancer l'application avec le backend Python
 
 ```bash
+docker compose -f docker-compose.python.yml up --build
+```
+
+Fichier utilisé : `docker-compose.python.yml`.
+
+Services démarrés :
+
+- `gateway` : point d'entrée HTTP sur le port `80` ;
+- `frontend` : interface de la calculatrice ;
+- `backend` : API Flask construite depuis `backend-python` ;
+- `redis` : cache Redis partagé par l'application.
+
+Le frontend n'a pas besoin de changer, car il appelle `/api/calculate`. C'est le Compose qui choisit quel backend reçoit cette requête.
+
+## 3. Lancer les tests Docker pour le backend JavaScript
+
+```bash
+BACKEND=js docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from backend-tests
+```
+
+Le Compose de test construit `./backend-js`, lance un vrai backend de test, puis exécute les tests Jest dans un conteneur séparé.
+
+Sous PowerShell :
+
+```powershell
+$env:BACKEND="js"
 docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from backend-tests
 ```
 
-Cette commande utilise `docker-compose.test.yml` et démarre un environnement de validation :
+## 4. Lancer les tests Docker pour le backend Python
 
-- `redis-test` : Redis dédié aux tests ;
-- `backend-test-target` : backend Flask lancé comme en production avec Gunicorn ;
-- `backend-tests` : conteneur dédié qui exécute `ruff check src tests && pytest`.
+```bash
+BACKEND=python docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from backend-tests
+```
 
-Le conteneur `backend-tests` est celui qui fait réussir ou échouer la commande. Il exécute :
+Le Compose de test construit `./backend-python`, lance un vrai backend Flask de test, puis exécute `ruff` et `pytest` dans un conteneur séparé.
 
-- les tests unitaires Python sur `Calculator` ;
-- les tests API Flask avec le client de test Flask ;
-- les tests HTTP d'intégration contre le vrai conteneur `backend-test-target`.
+Sous PowerShell :
 
-## 3. Nettoyer l'environnement de test
+```powershell
+$env:BACKEND="python"
+docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from backend-tests
+```
+
+Si `BACKEND` est absent, la valeur par défaut est `python`.
+
+## 5. Nettoyer l'environnement de test
 
 ```bash
 docker compose -f docker-compose.test.yml down -v --remove-orphans
 ```
 
-## 4. Intérêt pour la CI
+Avec sélection explicite :
 
-La CI GitHub Actions lance le deuxième Compose pour vérifier que les tests passent dans un environnement Docker reproductible. Le code de sortie du service `backend-tests` devient le résultat du job CI :
+```bash
+BACKEND=js docker compose -f docker-compose.test.yml down -v --remove-orphans
+BACKEND=python docker compose -f docker-compose.test.yml down -v --remove-orphans
+```
 
-- tests réussis : job vert ;
-- test échoué : job rouge.
-
-Cela montre la séparation entre :
+## 6. Rôle des fichiers Compose
 
 ```text
-docker-compose.yml       -> lancer l'application
-docker-compose.test.yml  -> valider l'application
+docker-compose.js.yml      -> application avec backend JavaScript
+docker-compose.python.yml  -> application avec backend Python
+docker-compose.test.yml    -> tests Docker pour JS ou Python selon BACKEND
+docker-compose.yml         -> alias compatible de docker-compose.js.yml
 ```
+
+Le point important pour le cours est la séparation suivante :
+
+```text
+backend-test-target -> le vrai backend lancé comme une API
+backend-tests       -> le conteneur qui exécute les tests
+```
+
+Le même `docker-compose.test.yml` fonctionne avec les deux backends grâce à la variable `BACKEND`.
+
+## 7. CI
+
+La CI GitHub Actions lance les deux variantes de backend :
+
+- job `backend-js` avec `BACKEND=js` ;
+- job `backend-python` avec `BACKEND=python`.
+
+Chaque job utilise le même fichier `docker-compose.test.yml`. Si les tests du backend sélectionné échouent, le job CI devient rouge.

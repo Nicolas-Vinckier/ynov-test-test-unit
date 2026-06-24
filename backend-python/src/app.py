@@ -145,6 +145,10 @@ def create_app(config: dict[str, Any] | None = None) -> Flask:
     def not_found(_: Exception) -> Response:
         return json_response(404, {"error": "Route introuvable."})
 
+    @app.get("/")
+    def hello() -> Response:
+        return json_response(200, {"message": "Hello from backend-python"})
+
     @app.get("/calculate")
     def calculate() -> Response:
         op = request.args.get("operation")
