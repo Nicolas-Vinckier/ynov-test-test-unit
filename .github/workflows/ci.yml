@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: [js, python]
+        backend: [js, python, java, php]
 
     steps:
       - uses: actions/checkout@v4
@@ -69,6 +69,10 @@ jobs:
             compose_file: docker-compose.js.yml
           - backend: python
             compose_file: docker-compose.python.yml
+          - backend: java
+            compose_file: docker-compose.java.yml
+          - backend: php
+            compose_file: docker-compose.php.yml
 
     steps:
       - uses: actions/checkout@v4

@@ -2,7 +2,7 @@
 
 Ce dossier contient l'implémentation JavaScript historique du backend calculatrice.
 
-Il expose le même contrat HTTP que le backend Python :
+Il expose le même contrat HTTP que les autres backends :
 
 ```http
 GET /calculate?operation=add&a=1&b=2

@@ -1,0 +1,36 @@
+services:
+  gateway:
+    build:
+      context: ./gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+    mem_limit: 32m
+
+  frontend:
+    build:
+      context: ./frontend
+    expose:
+      - "80"
+    mem_limit: 32m
+
+  backend:
+    build:
+      context: ./backend-java
+      target: runtime
+    expose:
+      - "3000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - PORT=3000
+    depends_on:
+      - redis
+    mem_limit: 256m
+
+  redis:
+    image: redis:alpine
+    expose:
+      - "6379"
+    mem_limit: 32m

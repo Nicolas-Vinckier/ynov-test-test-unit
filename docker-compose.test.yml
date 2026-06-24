@@ -23,16 +23,12 @@ services:
       redis-test:
         condition: service_healthy
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"const http=require('http');const req=http.get('http://localhost:3000/calculate?operation=add&a=1&b=2',res=>process.exit(res.statusCode===200?0:1));req.on('error',()=>process.exit(1));req.setTimeout(2000,()=>{req.destroy();process.exit(1);});\" || python -c \"import urllib.request; urllib.request.urlopen('http://localhost:3000/calculate?operation=add&a=1&b=2', timeout=2)\"",
-        ]
+      test: ["CMD-SHELL", "curl -fsS 'http://localhost:3000/calculate?operation=add&a=1&b=2' >/dev/null"]
       interval: 3s
       timeout: 2s
       retries: 20
       start_period: 5s
-    mem_limit: 128m
+    mem_limit: 256m
 
   backend-tests:
     build:
@@ -47,4 +43,4 @@ services:
         condition: service_healthy
       backend-test-target:
         condition: service_healthy
-    mem_limit: 128m
+    mem_limit: 256m

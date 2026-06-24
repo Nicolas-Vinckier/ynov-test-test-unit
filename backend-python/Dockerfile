@@ -1,5 +1,6 @@
 FROM python:3.12-alpine AS base
 
+RUN apk add --no-cache curl
 WORKDIR /usr/src/app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

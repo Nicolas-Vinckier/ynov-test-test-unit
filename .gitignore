@@ -6,3 +6,10 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Java
+backend-java/build/
+*.class
+
+# PHP local cache
+backend-php/.cache/
