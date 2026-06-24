@@ -8,7 +8,3 @@ htmlcov/
 .env
 .git
 .gitignore
-tests/
-requirements-dev.txt
-pyproject.toml
-Dockerfile

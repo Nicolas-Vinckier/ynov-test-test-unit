@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  redis-test:
+    image: redis:alpine
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 1s
+      retries: 15
+    mem_limit: 32m
+
+  backend-test-target:
+    build:
+      context: ./backend
+      target: runtime
+    expose:
+      - "3000"
+    environment:
+      - REDIS_URL=redis://redis-test:6379
+      - PORT=3000
+    depends_on:
+      redis-test:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:3000/calculate?operation=add&a=1&b=2', timeout=2)",
+        ]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+      start_period: 5s
+    mem_limit: 128m
+
+  backend-tests:
+    build:
+      context: ./backend
+      target: test
+    environment:
+      - TEST_BASE_URL=http://backend-test-target:3000
+      - REDIS_URL=redis://redis-test:6379
+    depends_on:
+      redis-test:
+        condition: service_healthy
+      backend-test-target:
+        condition: service_healthy
+    mem_limit: 128m
