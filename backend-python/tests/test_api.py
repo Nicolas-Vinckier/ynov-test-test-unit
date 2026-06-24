@@ -59,11 +59,17 @@ def test_method_not_allowed(client, method):
     assert "GET" in response.headers["allow"]
 
 
-@pytest.mark.parametrize("path", ["/unknown", "/", "/calculate/"])
+@pytest.mark.parametrize("path", ["/unknown", "/calculate/"])
 def test_unknown_routes(client, path):
     response, body, _ = get_json(client, path)
     assert response.status_code == 404
     assert body["error"] == "Route introuvable."
+
+
+def test_root_route_returns_backend_identity(client):
+    response, body, _ = get_json(client, "/")
+    assert response.status_code == 200
+    assert body == {"message": "Hello from backend-python"}
 
 
 @pytest.mark.parametrize(

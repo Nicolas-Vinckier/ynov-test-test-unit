@@ -116,9 +116,28 @@ Le même `docker-compose.test.yml` fonctionne avec les deux backends grâce à l
 
 ## 7. CI
 
-La CI GitHub Actions lance les deux variantes de backend :
+La CI GitHub Actions valide maintenant les deux implémentations.
 
-- job `backend-js` avec `BACKEND=js` ;
-- job `backend-python` avec `BACKEND=python`.
+Le job `backend` utilise une matrice :
 
-Chaque job utilise le même fichier `docker-compose.test.yml`. Si les tests du backend sélectionné échouent, le job CI devient rouge.
+```text
+BACKEND=js
+BACKEND=python
+```
+
+Chaque variante utilise le même fichier `docker-compose.test.yml`. Le conteneur `backend-test-target` lance le backend réel, puis le conteneur `backend-tests` exécute la suite de tests adaptée au langage sélectionné.
+
+La CI exécute aussi :
+
+- le build du frontend ;
+- les tests Playwright contre l'application Docker complète en version JavaScript ;
+- les tests Playwright contre l'application Docker complète en version Python.
+
+Les deux Compose applicatifs sont donc contrôlés :
+
+```text
+docker-compose.js.yml
+docker-compose.python.yml
+```
+
+Un échec dans une variante backend, un build frontend, ou un test E2E rend la CI rouge.

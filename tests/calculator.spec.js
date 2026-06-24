@@ -103,6 +103,24 @@ test.describe("Tests E2E de la Cand'culatrice", () => {
     await expect(page.locator(".dot")).toHaveClass(/cached/);
   });
 
+
+  test("effectue un calcul avec le vrai backend via le gateway", async ({
+    page,
+  }) => {
+    test.skip(
+      !process.env.BASE_URL,
+      "Ce test nécessite l'application complète lancée par Docker Compose.",
+    );
+
+    await page.getByRole("button", { name: "9" }).click();
+    await page.getByRole("button", { name: "+" }).click();
+    await page.getByRole("button", { name: "4" }).click();
+    await page.locator("#equals").click();
+
+    await expect(page.locator("#current-operand")).toHaveText("13");
+    await expect(page.locator("#status-bar")).toContainText(/Calculé avec succès|Résultat en cache/);
+  });
+
   test("affiche une erreur lorsque l'API retourne une erreur de calcul", async ({
     page,
   }) => {
